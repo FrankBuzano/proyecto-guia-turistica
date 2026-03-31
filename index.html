@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verdant | Guía Turística de Costa Rica</title>
+
+  <!-- Tipografía -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <!-- Estilos Globales -->
+  <link rel="stylesheet" href="./css/global.css">
+
+  <!-- Componentes Web -->
+  <script type="module" src="./components/hero-section.js"></script>
+  <script type="module" src="./components/interactive-map.js"></script>
+</head>
+<body>
+
+  <!-- App Header / Navegación Global (fuera de Shadow DOM para facilidad, pero usando tokens globales) -->
+  <nav class="glass-nav" style="position: fixed; top: 0; width: 100%; z-index: 50; padding: 1rem 0; box-shadow: var(--shadow-ambient);">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-family: var(--font-headline); font-style: italic; font-size: 1.5rem; color: #fff;">Verdant</div>
+      
+      <div class="nav-links" style="display: none;">
+        <!-- Aquí irían los links en desktop. Por brevedad los omito o los dejo simples. -->
+        <a href="#" style="color: var(--color-primary); font-weight: 700; text-decoration: none; border-bottom: 2px solid var(--color-primary);">Inicio</a>
+        <a href="#" style="color: rgba(221, 228, 222, 0.8); text-decoration: none; margin-left: 2rem;">Experiencias</a>
+        <a href="#" style="color: rgba(221, 228, 222, 0.8); text-decoration: none; margin-left: 2rem;">Destinos</a>
+      </div>
+
+      <button class="btn-primary">Planea tu viaje</button>
+    </div>
+  </nav>
+
+  <!-- Contenido Principal -->
+  <main style="padding-top: 60px;"> <!-- padding top for fixed nav -->
+    
+    <!-- Hero Component -->
+    <hero-section></hero-section>
+
+    <!-- Map Component -->
+    <section class="container" style="padding-top: var(--spacing-16); padding-bottom: var(--spacing-16);">
+      <!-- Título de sección superpuesto al área del mapa -->
+      <div style="text-align: center; margin-bottom: var(--spacing-8);">
+        <h2 class="headline" style="font-size: var(--text-display-md); color: #fff; margin-bottom: var(--spacing-2);">Explora el País</h2>
+        <p style="color: var(--color-primary); letter-spacing: 0.15em; text-transform: uppercase; font-size: var(--text-body-sm);">Descubre maravillas ocultas</p>
+      </div>
+      
+      <interactive-map style="max-width: 920px; margin: 0 auto; display: block;"></interactive-map>
+    </section>
+
+  </main>
+
+  <footer style="background-color: var(--color-surface-lowest); padding: var(--spacing-12) 0;">
+    <div class="container" style="text-align: center; color: var(--color-on-surface-variant); font-size: var(--text-body-sm);">
+      <p>&copy; 2026 Verdant Curator. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Configuración responsive sencilla
+    const updateNav = () => {
+      const match = window.matchMedia("(min-width: 768px)").matches;
+      document.querySelector('.nav-links').style.display = match ? 'flex' : 'none';
+      document.querySelector('.nav-links').style.alignItems = 'center';
+    };
+    window.addEventListener('resize', updateNav);
+    updateNav();
+  </script>
+</body>
+</html>
