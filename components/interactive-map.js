@@ -4,6 +4,7 @@ export default class InteractiveMap extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     this._cam = { x: 0, y: 0, s: 1 };
     this._drag = { active: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, moved: false };
+    this._pinch = { active: false, dist: 0, midX: 0, midY: 0, camStartX: 0, camStartY: 0, startS: 1 };
     this._destinos = [];
     this._svgPaths = {};
     this._provincias = {
@@ -78,7 +79,8 @@ export default class InteractiveMap extends HTMLElement {
   _css() {
     return `
       :host { display: block; width: 100%; border-radius: var(--radius-xl, 16px); overflow: hidden; }
-      .wrap { position: relative; width: 100%; height: 560px; background: #0a1f14; }
+      .wrap { position: relative; width: 100%; height: min(560px, 56vw); min-height: 240px; background: #0a1f14; }
+      @media (max-width: 700px) { .wrap { height: min(400px, 75vw); } }
       .vp { width: 100%; height: 100%; cursor: grab; overflow: hidden; touch-action: none; user-select: none; }
       .vp.dragging { cursor: grabbing; }
       .cam { width: 100%; height: 100%; transform-origin: 0 0; transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1); }
@@ -102,42 +104,41 @@ export default class InteractiveMap extends HTMLElement {
 
   _clampCam() {
     const vp = this.shadowRoot.getElementById('vp');
-    if (!vp) return;
-    const { width: cW, height: cH } = vp.getBoundingClientRect();
-    // Natural map dimensions (SVG viewBox)
-    const mapW = 1000;
-    const mapH = 560;
-    const s = this._cam.s;
-    // When the map is larger than the container, keep it from scrolling off-screen.
-    // Transform order is: translate(x,y) then scale(s) from origin 0,0.
-    // So the visible range of the translated map in screen pixels is [x*s … x*s + mapW*s].
-    const scaledW = mapW * s;
-    const scaledH = mapH * s;
+    const cam = this.shadowRoot.getElementById('cam');
+    if (!vp || !cam) return;
 
-    let minX, maxX, minY, maxY;
+    const cW = vp.clientWidth;
+    const cH = vp.clientHeight;
+    const s  = this._cam.s;
+
+    // The SVG is styled width:100% height:100% inside .cam, so at scale=1
+    // it fills the container exactly. Actual rendered map size = container * scale.
+    const scaledW = cW * s;
+    const scaledH = cH * s;
+
+    // --- Horizontal axis ---
     if (scaledW <= cW) {
-      // Map fits horizontally — center it and forbid horizontal drag
+      // Map fits (or equals) container width — center and lock
       this._cam.x = (cW - scaledW) / (2 * s);
-      minX = this._cam.x;
-      maxX = this._cam.x;
     } else {
-      // Keep at least 1px of the map visible on each side
-      minX = (cW - scaledW) / s;   // leftmost allowed translate (right edge at viewport right)
-      maxX = 0;                     // rightmost allowed translate (left edge at viewport left)
+      // Map is wider than container: clamp so neither edge goes out of view
+      // translateX is in pre-scale space; screen position = x * s
+      // Right edge must stay >= 0:   x*s + scaledW >= cW  →  x >= (cW-scaledW)/s
+      // Left  edge must stay <= 0:   x*s <= 0             →  x <= 0
+      const minX = (cW - scaledW) / s;
+      const maxX = 0;
+      this._cam.x = Math.min(maxX, Math.max(minX, this._cam.x));
     }
 
+    // --- Vertical axis ---
     if (scaledH <= cH) {
-      // Map fits vertically — center it and forbid vertical drag
+      // Map fits (or equals) container height — center and lock
       this._cam.y = (cH - scaledH) / (2 * s);
-      minY = this._cam.y;
-      maxY = this._cam.y;
     } else {
-      minY = (cH - scaledH) / s;
-      maxY = 0;
+      const minY = (cH - scaledH) / s;
+      const maxY = 0;
+      this._cam.y = Math.min(maxY, Math.max(minY, this._cam.y));
     }
-
-    this._cam.x = Math.min(maxX, Math.max(minX, this._cam.x));
-    this._cam.y = Math.min(maxY, Math.max(minY, this._cam.y));
   }
 
   _applyCam(animate = true) {
@@ -206,6 +207,138 @@ export default class InteractiveMap extends HTMLElement {
       this._applyCam(false);
       setTimeout(() => R.getElementById('cam').classList.remove('no-transition'), 100);
     }, { passive: false });
+
+    // ─── Touch interaction ─────────────────────────────────────────────────────
+    //
+    // Modes:
+    //   1 finger  → pan   (touch1 state)
+    //   2 fingers → pinch (this._pinch state)
+    //
+    // Guard: after a pinch ends, pan is DISABLED until a fresh 1-finger
+    // touchstart arrives.  This prevents the coordinate-mismatch jump that
+    // occurs when the remaining finger's position is stale relative to the
+    // camera snapshot taken at the start of the pan gesture.
+
+    let touch1          = { active: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0 };
+    let postPinchGuard  = false;   // true = ignore next touchmove until fresh touchstart
+
+    const getTouchDist = (t1, t2) => {
+      const dx = t1.clientX - t2.clientX;
+      const dy = t1.clientY - t2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const getTouchMid = (t1, t2, rect) => ({
+      x: ((t1.clientX + t2.clientX) / 2) - rect.left,
+      y: ((t1.clientY + t2.clientY) / 2) - rect.top,
+    });
+
+    // ── touchstart ────────────────────────────────────────────────────────────
+    vp.addEventListener('touchstart', e => {
+
+      if (e.touches.length === 1 && !this._pinch.active) {
+        // Fresh single-finger contact → start pan
+        const t = e.touches[0];
+        touch1 = {
+          active:    true,
+          startX:    t.clientX,
+          startY:    t.clientY,
+          camStartX: this._cam.x,
+          camStartY: this._cam.y,
+        };
+        postPinchGuard       = false;   // clear guard: this is a legitimate new gesture
+        this._drag.moved     = false;
+        R.getElementById('cam').classList.add('no-transition');
+
+      } else if (e.touches.length === 2) {
+        // Two fingers → enter pinch mode
+        touch1.active = false;          // kill any ongoing single-finger pan
+        postPinchGuard = false;
+
+        const t1 = e.touches[0], t2 = e.touches[1];
+        const rect = vp.getBoundingClientRect();
+        const mid  = getTouchMid(t1, t2, rect);
+
+        this._pinch = {
+          active:    true,
+          dist:      getTouchDist(t1, t2),
+          midX:      mid.x,
+          midY:      mid.y,
+          camStartX: this._cam.x,
+          camStartY: this._cam.y,
+          startS:    this._cam.s,
+        };
+        this._drag.active = false;
+        vp.classList.remove('dragging');
+        R.getElementById('cam').classList.add('no-transition');
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    // ── touchmove ─────────────────────────────────────────────────────────────
+    vp.addEventListener('touchmove', e => {
+      e.preventDefault();
+
+      // ── Pinch path (2 fingers) ──
+      if (this._pinch.active && e.touches.length >= 2) {
+        const t1 = e.touches[0], t2 = e.touches[1];
+        const rect = vp.getBoundingClientRect();
+
+        const newDist = getTouchDist(t1, t2);
+        const ratio   = newDist / this._pinch.dist;
+        const newS    = Math.min(6, Math.max(1, this._pinch.startS * ratio));
+
+        const mid  = getTouchMid(t1, t2, rect);
+        const mapX = this._pinch.midX / this._pinch.startS - this._pinch.camStartX;
+        const mapY = this._pinch.midY / this._pinch.startS - this._pinch.camStartY;
+
+        this._cam.x = mid.x / newS - mapX;
+        this._cam.y = mid.y / newS - mapY;
+        this._cam.s = newS;
+
+        this._clampCam();
+        this._applyCam(false);
+        return;
+      }
+
+      // ── Pan path (1 finger) ──
+      // Blocked while guard is raised (post-pinch cooldown) or touch1 inactive
+      if (postPinchGuard || !touch1.active || e.touches.length !== 1) return;
+
+      const t  = e.touches[0];
+      const dx = t.clientX - touch1.startX;
+      const dy = t.clientY - touch1.startY;
+
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) this._drag.moved = true;
+
+      this._cam.x = touch1.camStartX + dx / this._cam.s;
+      this._cam.y = touch1.camStartY + dy / this._cam.s;
+
+      this._clampCam();
+      this._applyCam(false);
+    }, { passive: false });
+
+    // ── touchend / touchcancel ────────────────────────────────────────────────
+    vp.addEventListener('touchend', e => {
+      if (e.touches.length < 2 && this._pinch.active) {
+        // Pinch just ended (went from 2 → 1 or 0 fingers)
+        this._pinch.active = false;
+        touch1.active      = false;   // invalidate stale pan origin
+        postPinchGuard     = true;    // block pan until a fresh touchstart
+        R.getElementById('cam').classList.remove('no-transition');
+      }
+      if (e.touches.length === 0) {
+        touch1.active = false;
+        R.getElementById('cam').classList.remove('no-transition');
+      }
+    }, { passive: true });
+
+    vp.addEventListener('touchcancel', () => {
+      this._pinch.active = false;
+      touch1.active      = false;
+      postPinchGuard     = true;    // treat cancel as post-pinch too
+      R.getElementById('cam').classList.remove('no-transition');
+    }, { passive: true });
 
     // Province click highlights
     R.querySelectorAll('.prov').forEach(p => {
