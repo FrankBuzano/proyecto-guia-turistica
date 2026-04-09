@@ -11,6 +11,10 @@ class HeroSection extends HTMLElement {
   render() {
     this.shadowRoot.innerHTML = `
       <style>
+        *, *::before, *::after {
+          box-sizing: border-box;
+        }
+
         :host {
           display: block;
           position: relative;
