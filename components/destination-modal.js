@@ -27,7 +27,11 @@ export default class DestinationModal extends HTMLElement {
       overlay.classList.remove('visible');
       document.body.style.overflow = '';
       
-      // Stop media from playing when closed (if any future video is added)
+      // Stop media from playing when closed
+      const video = this.shadowRoot.querySelector('video');
+      if (video) {
+        video.pause();
+      }
     }
   }
 
@@ -216,6 +220,34 @@ export default class DestinationModal extends HTMLElement {
           line-height: 1.7; font-size: 1.05rem; 
         }
 
+        /* Video Section */
+        .video-section {
+          margin-top: 2rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .video-title {
+          font-family: var(--font-headline);
+          font-size: 1.3rem;
+          margin: 0 0 1rem 0;
+          color: #fff;
+        }
+        .video-wrapper {
+          position: relative;
+          width: 100%;
+          padding-bottom: 56.25%; /* 16:9 aspect ratio */
+          background: #000;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .video-wrapper video {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          object-fit: cover; /* or contain depending on preference */
+        }
+
         @media (min-width: 768px) {
            .modal { flex-direction: row; align-items: stretch; height: 75vh; }
            .gallery { width: 45%; height: 100%; min-height: auto; }
@@ -253,6 +285,20 @@ export default class DestinationModal extends HTMLElement {
             </div>
             <div class="body">
               <p>${d.descripcion || 'Sin descripción disponible.'}</p>
+              
+              <div class="video-section">
+                <h3 class="video-title">Explora en Video</h3>
+                <div class="video-wrapper">
+                  <!-- Usa el video del JSON si existe, de lo contrario usa un MP4 dummy -->
+                  <video id="dest-video" controls preload="none" 
+                    src="${d.video || 'https://www.w3schools.com/html/mov_bbb.mp4'}" 
+                    poster="${d.imagen_portada || ''}"
+                    aria-label="Video del destino ${d.nombre}">
+                    Tu navegador no soporta el etiquetado de video.
+                  </video>
+                </div>
+              </div>
+
             </div>
           </div>
           
@@ -281,6 +327,18 @@ export default class DestinationModal extends HTMLElement {
             }
           });
         });
+    }
+    
+    // Video Fallback: Si el video del JSon no existe localmente (error 404), usa el dummy publico
+    const videoEl = this.shadowRoot.getElementById('dest-video');
+    if (videoEl) {
+      videoEl.addEventListener('error', () => {
+        // Para asegurar compatibilidad extra con Safari y evitar bucles
+        if (!videoEl.src.includes('w3schools.com')) {
+          console.warn('Video local no encontrado, cargando video de respaldo.');
+          videoEl.src = 'https://www.w3schools.com/html/mov_bbb.mp4';
+        }
+      });
     }
 
     // Single global keyboard handler bound to window to make sure we catch Escape regardless of focus
