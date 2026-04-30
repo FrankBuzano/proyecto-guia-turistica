@@ -4,83 +4,62 @@ Este proyecto consiste en una guía turística interactiva desarrollada en JavaS
 
 ## Requisitos
 
-- Node.js (recomendado v16 o superior)
-- pnpm (o npm/yarn, pero se recomienda pnpm)
+* Node.js (recomendado v16 o superior)
+* pnpm
+* servor (servidor estático para desarrollo)
 
 ## Instalación
 
 1. Clona este repositorio:
 
-   sh
+   ```sh
    git clone <URL-del-repositorio>
-   cd proyecto-guia-turistica-forkFelix
-   
+   cd <nombre-de-la-carpeta-del-proyecto>
+   ```
 
 2. Instala las dependencias:
 
-   sh
+   ```sh
    pnpm install
-   # o
-   npm install
-   # o
-   yarn install
-   
+   ```
+
 
 ## Ejecución en un servidor local
 
-Los navegadores modernos requieren que los ES Modules se sirvan desde un servidor local (no funcionan correctamente abriendo el archivo index.html directamente).
+Los navegadores modernos requieren que los ES Modules se sirvan desde un servidor local (no funcionan correctamente abriendo el archivo `index.html` directamente).
 
-Puedes usar cualquier servidor estático. Aquí tienes varias opciones:
+Este proyecto utiliza **servor** como servidor de desarrollo estático.
 
-### Opción 1: Usar serve (recomendado)
+1. Instala `servor` globalmente si no lo tienes:
 
-1. Instala serve globalmente si no lo tienes:
-
-   sh
-   pnpm add -g serve
-   # o
-   npm install -g serve
-   # o
-   yarn global add serve
-   
+   ```sh
+   pnpm add -g servor
+   ```
 
 2. Ejecuta el servidor en la raíz del proyecto:
 
-   sh
-   serve .
-   
+   ```sh
+   servor .
+   ```
 
-3. Abre tu navegador en la URL que aparece (por defecto http://localhost:3000).
-
-### Opción 2: Usar VS Code Live Server
-
-1. Instala la extensión "Live Server" en VS Code.
-2. Haz clic derecho en index.html y selecciona "Open with Live Server".
-
-### Opción 3: Usar Python (si tienes Python instalado)
-
-sh
-# Python 3
-python -m http.server 8000
-
-
-Luego abre http://localhost:8000 en tu navegador.
+3. Abre tu navegador en la URL que aparece (por defecto http://localhost:8080).
 
 ---
 
 ## Estructura del Proyecto
 
-- index.html: Página principal.
-- src/: Código fuente (componentes, datos, utilidades, estilos).
-- assets/: Imágenes y recursos estáticos.
-- package.json: Dependencias y scripts.
+- `index.html`: Página principal.
+- `src/`: Código fuente (componentes, datos, utilidades, estilos).
+- `assets/`: Imágenes y recursos estáticos.
+- `package.json`: Dependencias y scripts.
 
 ---
 
+
 ## Notas
 
-- Si modifica archivos fuente, solo recargue el navegador para ver los cambios.
-- Si tiene problemas con rutas o módulos, asegúrese de estar usando un servidor local.
+- Si modificas archivos fuente, solo recarga el navegador para ver los cambios.
+- Si tienes problemas con rutas o módulos, asegúrate de estar usando un servidor local con servor.
 
 ---
 
