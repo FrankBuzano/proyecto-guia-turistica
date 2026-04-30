@@ -88,3 +88,22 @@
 
 - **Imagen URL**: https://www.nacion.com/resizer/v2/723RUNLPHNAIDB6DHH52XSUPSI.jpg
   - **Créditos a**: Grupo Nación GN S.A.
+
+
+## Caribe 
+
+- **Imagen URL**: https://costaricaexperts.com/destinations/puerto-viejo/
+  - **Créditos a**: costaricaexperts.com
+
+- **Imagen URL**: https://es.wikipedia.org/wiki/Puerto_Viejo_(Talamanca)
+  - **Créditos a**: Wikipedia
+
+- **Imagen URL**: https://www.tortugueroinfo.com/spa/info_tortuguero.htm
+  - **Créditos a**: tortugueroinfo.com
+
+- **Imagen URL**: https://www.nadaincluido.com/playas-de-costa-rica/3-parque-nacional-cahuita-mono-1-2/
+  - **Créditos a**: nadaincluido.com
+
+- **Imagen URL**: https://www.cahuita.cr/
+  - **Créditos a**: cahuita.cr
+
