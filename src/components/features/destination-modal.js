@@ -81,7 +81,7 @@ export default class DestinationModal extends HTMLElement {
                  `</div>`;
     }
 
-    this.shadowRoot.innerHTML = /*html*/`
+    this.shadowRoot.setHTMLUnsafe(/*html*/`
       <style>
         :host {
           --modal-bg: var(--color-surface-dim, #131b16);
@@ -304,7 +304,7 @@ export default class DestinationModal extends HTMLElement {
           
         </div>
       </div>
-    `;
+    `);
 
     // Event Bindings
     this.shadowRoot.getElementById('close-btn').addEventListener('click', () => this.close());
